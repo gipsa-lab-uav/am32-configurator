@@ -31,7 +31,7 @@
     "nuxt": "^3.9.0",
     "vue": "^3.4.3",
     "vue-router": "^4.2.5",
-    "vue-tsc": "^1.2.0"
+    "vue-tsc": "^2.0.0"
   },
   "dependencies": {
     "@animxyz/core": "^0.6.6",
@@ -42,6 +42,7 @@
     "@pinia/nuxt": "^0.5.1",
     "ajv": "^8.12.0",
     "bluejay-rtttl-parse": "^2.0.2",
+    "bun": "^1.1.26",
     "dayjs": "^1.11.12",
     "dotenv": "^16.4.5",
     "minio": "^8.0.1",

@@ -355,6 +355,97 @@
                       @change="onSettingsChange"
                     />
                   </SettingFieldGroup>
+
+                  <SettingFieldGroup
+                    title="RPM Mode"
+                    :eeprom-version="escStore.firstValidEscData?.data.settings.LAYOUT_REVISION as number"
+                    :cols="1"
+                    :switches="[{
+                      field: 'DRIVE_BY_RPM',
+                      name: 'Enable RPM mode'
+                    }]"
+                    @change="onSettingsChange"
+                  >
+                    <SettingField
+                      :esc-info="escStore.selectedEscInfo"
+                      name="RPM Min"
+                      type="number"
+                      field="RPM_MIN"
+                      :min="0"
+                      :max="255000"
+                      :display-factor="200"
+                      :offset="0"
+                      :disabled="(value: number) => escStore.firstValidEscData?.data.settings.DRIVE_BY_RPM === 0"
+                      show-value
+                      @change="onSettingsChange"
+                    />
+                    <SettingField
+                      :esc-info="escStore.selectedEscInfo"
+                      name="RPM Max"
+                      type="number"
+                      field="RPM_MAX"
+                      :min="0"
+                      :max="255000"
+                      :display-factor="200"
+                      :offset="0"
+                      :disabled="(value: number) => escStore.firstValidEscData?.data.settings.DRIVE_BY_RPM === 0"
+                      show-value
+                      @change="onSettingsChange"
+                    />
+                    <SettingField
+                      :esc-info="escStore.selectedEscInfo"
+                      name="Kp"
+                      type="number"
+                      field="KP"
+                      :min="0"
+                      :max="255"
+                      :display-factor="1"
+                      :offset="0"
+                      :disabled="(value: number) => escStore.firstValidEscData?.data.settings.DRIVE_BY_RPM === 0"
+                      show-value
+                      @change="onSettingsChange"
+                    />
+                    <SettingField
+                      :esc-info="escStore.selectedEscInfo"
+                      name="Ki"
+                      type="number"
+                      field="KI"
+                      :min="0"
+                      :max="255"
+                      :display-factor="1"
+                      :offset="0"
+                      :disabled="(value: number) => escStore.firstValidEscData?.data.settings.DRIVE_BY_RPM === 0"
+                      show-value
+                      @change="onSettingsChange"
+                    />
+                    <SettingField
+                      :esc-info="escStore.selectedEscInfo"
+                      name="Kd"
+                      type="number"
+                      field="KD"
+                      :min="0"
+                      :max="255"
+                      :display-factor="1"
+                      :offset="0"
+                      :disabled="(value: number) => escStore.firstValidEscData?.data.settings.DRIVE_BY_RPM === 0"
+                      show-value
+                      @change="onSettingsChange"
+                    />
+                    <SettingField
+                      :esc-info="escStore.selectedEscInfo"
+                      name="Integral Sat"
+                      type="number"
+                      field="INTEGRAL_LIMIT"
+                      :min="0"
+                      :max="255"
+                      :display-factor="1"
+                      :offset="0"
+                      :disabled="(value: number) => escStore.firstValidEscData?.data.settings.DRIVE_BY_RPM === 0"
+                      show-value
+                      @change="onSettingsChange"
+                    />
+
+                  </SettingFieldGroup>
                 </div>
               </div>
             </div>

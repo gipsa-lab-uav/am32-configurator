@@ -159,6 +159,34 @@ export const EepromLayout = {
     AUTO_TIMING: {
         offset: 0xB0,
         size: 1
+    },
+    DRIVE_BY_RPM: {
+        offset: 0xB1,
+        size: 1
+    },
+    RPM_MIN: {
+        offset: 0xB2,
+        size: 1
+    },
+    RPM_MAX: {
+        offset: 0xB3,
+        size: 1
+    },
+    KP: {
+        offset: 0xB4,
+        size: 1
+    },
+    KI: {
+        offset: 0xB5,
+        size: 1
+    },
+    KD: {
+        offset: 0xB6,
+        size: 1
+    },
+    INTEGRAL_LIMIT: {
+        offset: 0xB7,
+        size: 1
     }
 };
 
