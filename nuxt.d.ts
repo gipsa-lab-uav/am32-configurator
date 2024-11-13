@@ -3,7 +3,7 @@ type LogMessage = [Date, string, LogMessageType]
 type LogFn = (s: string) => void;
 type PromiseFn<T = any> = (a: T | PromiseLike<T> | unknown | PromiseLike<any>) => any
 interface MspData {
-    type: 'bf' | 'qs' | 'kiss' | 'inav' | 'ardu' | null,
+    type: 'bf' | 'qs' | 'kiss' | 'inav' | 'ardu' | 'fettec' | null,
     protocol_version: number
     api_version: string,
     batteryData: {
@@ -51,7 +51,22 @@ interface BlobFolder {
     children: BlobFolder[]
 }
 
+type AmjType = {
+    type: 'bl_update' | 'fw_update',
+    githash: string,
+    version: string,
+    mcuType: 'F421' | 'F051' | 'F415' | 'E230' | 'G071' | 'F031',
+    pin: 'PA2' | 'PB4' | string,
+    hex: string
+};
+
+type CacheEntry = {
+    name: string,
+    url: string
+};
+
 declare module 'bluejay-rtttl-parse' {
+    // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
     export default class Rtttl {
         static fromBluejayStartupMelody(startUpMelody: Uint8Array, name?: string): string;
         static toBluejayStartupMelody(rtttl: string, length?: number): {

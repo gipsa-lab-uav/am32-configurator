@@ -7,11 +7,22 @@ export default defineNuxtConfig({
             enabled: true
         }
     },
+
     typescript: {
         shim: false,
         typeCheck: true
     },
+
     ssr: false,
+
+    runtimeConfig: {
+        redis: { // Default values
+            host: process.env.REDIS_HOST,
+            port: 6379
+            /* other redis connector options */
+        }
+    },
+
     modules: [
         '@vite-pwa/nuxt',
         'nuxt-svgo',
@@ -28,16 +39,20 @@ export default defineNuxtConfig({
         '@nuxt/content',
         '@nuxt/image'
     ],
+
     pinia: {
         storesDirs: ['./stores/**']
     },
+
     colorMode: {
         preference: 'dark'
     },
+
     svgo: {
         autoImportPath: false,
         explicitImportsOnly: true
     },
+
     pwa: {
         registerType: 'autoUpdate',
         manifest: {
@@ -48,12 +63,12 @@ export default defineNuxtConfig({
             description: 'Configurator for the ESC firmware AM32',
             icons: [
                 {
-                    src: 'assets/images/144x144.png',
+                    src: 'assets/images/am32-logo.svg',
                     sizes: '288x288',
-                    type: 'image/png'
+                    type: 'image/svg'
                 },
                 {
-                    src: 'assets/images/square_logo.svg',
+                    src: 'assets/images/am32-logo.svg',
                     sizes: '144x144',
                     type: 'image/svg',
                     purpose: 'any'
@@ -92,5 +107,7 @@ export default defineNuxtConfig({
             navigateFallbackAllowlist: [/^\/$/],
             type: 'module'
         }
-    }
+    },
+
+    compatibilityDate: '2024-09-16'
 });

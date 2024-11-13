@@ -139,8 +139,10 @@ import holybroImage from '~/assets/logos/holybro.png';
 import skystars from '~/assets/logos/skystars.png';
 import rushfpv from '~/assets/logos/rushfpv.png';
 import airbotImage from '~/assets/logos/Airbot_Logo.svg';
+import kissUltraImage from '~/assets/logos/kiss-ultra.svg';
 import sequreImage from '~/assets/logos/sequre.png';
 import brotherHobbyImage from '~/assets/logos/brotherhobby.png';
+import vimdronesImage from '~/assets/logos/vimdrones_logo_white.png';
 
 const images = [{
     path: airbotImage,
@@ -165,5 +167,12 @@ const images = [{
     path: brotherHobbyImage,
     url: 'https://www.brotherhobbystore.com/',
     class: 'invert'
+}, {
+    path: kissUltraImage,
+    url: 'https://store.kiss-ultra.com/',
+    class: 'invert'
+}, {
+    path: vimdronesImage,
+    url: 'https://shop.vimdrones.com/'
 }];
 </script>
