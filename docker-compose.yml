@@ -4,10 +4,9 @@ services:
       context: ./
       dockerfile: docker/Dockerfile
     pull_policy: build
-    restart: unless-stopped
     env_file: stack.env
     ports:
-      - "3000:3000"
+      - "${HTTP_PORT:-3000}:3000"
     networks:
       - proxy
       - redis-net
@@ -21,7 +20,6 @@ services:
       - redis-net
   cache:
     image: redis:7
-    restart: unless-stopped
     ports:
       - '6379:6379'
     networks:

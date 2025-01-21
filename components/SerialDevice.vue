@@ -47,7 +47,7 @@
             </UChip>
           </div>
           <div class="flex gap-2">
-            <UButton v-if="!serialStore.isDirectConnect" icon="i-material-symbols-find-in-page-outline" size="2xs" :loading="escStore.isLoading" @click="connectToEsc">
+            <UButton icon="i-material-symbols-find-in-page-outline" size="2xs" :loading="escStore.isLoading" @click="connectToEsc">
               Read
             </UButton>
             <UButton
@@ -278,7 +278,10 @@
             </div>
           </template>
           <div>
-            <div class="flex flex-col gap-2">
+            <div v-if="serialStore.isDirectConnect" class="text-center">
+              Do you want to overwrite the current config with default settings?
+            </div>
+            <div v-else class="flex flex-col gap-2">
               <div class="text-center">
                 Select ESC(s) to apply:
               </div>
@@ -299,7 +302,7 @@
           </div>
           <template #footer>
             <div class="text-right">
-              <UButton label="Apply" :disabled="savingOrApplyingSelectedEscs.length === 0" @click="applyDefaultConfig" />
+              <UButton color="green" :label="serialStore.isDirectConnect ? 'Yes' : 'Apply'" :disabled="savingOrApplyingSelectedEscs.length === 0" @click="applyDefaultConfig" />
             </div>
           </template>
         </UCard>
@@ -390,9 +393,10 @@
 <script setup lang="ts">
 
 import commandsQueue from '~/src/communication/commands.queue';
-import { DIRECT_COMMANDS, DIRECT_RESPONSES, Direct } from '~/src/communication/direct';
+import { DIRECT_COMMANDS, Direct } from '~/src/communication/direct';
 import { FOUR_WAY_COMMANDS, FourWay } from '~/src/communication/four_way';
 import Msp, { MSP_COMMANDS } from '~/src/communication/msp';
+import serial from '~/src/communication/serial';
 import Serial from '~/src/communication/serial';
 import db from '~/src/db';
 import Flash from '~/src/flash';
@@ -404,7 +408,7 @@ const escStore = useEscStore();
 const { escData } = storeToRefs(escStore);
 const { log, logWarning, logError } = useLogStore();
 const usbFCVendorIds = [0x0483, 0x2E3C, 0x2E8A, 0x1209, 0x26AC, 0x27AC, 0x2DAE, 0x3162, 0x35A7];
-const usbDirectVendorIds = [0x1A86, 0x0403, 0x4348, 0x26BA];
+const usbDirectVendorIds = [0x1A86, 0x0403, 0x4348, 0x26BA, 0x10C4];
 const flashModalOpen = ref(false);
 const applyDefaultConfigModalOpen = ref(false);
 const saveConfigModalOpen = ref(false);
@@ -537,6 +541,12 @@ useIntervalFn(() => {
 }, 500);
 
 const connectToDevice = async () => {
+    const router = useRouter();
+    if (!router.currentRoute.value.fullPath.startsWith('/configurator')) {
+        router.push({
+            path: '/configurator'
+        });
+    }
     const portTmp: string[] | undefined = serialStore.selectedDevice?.id.split(':');
     if (portTmp) {
         const ports = await navigator.serial.getPorts();
@@ -590,24 +600,7 @@ const connectToDevice = async () => {
                 log('Connected to device');
 
                 if (isDirectConnectDevice.value) {
-                    serialStore.isDirectConnect = true;
-
-                    savingOrApplyingSelectedEscs.value = [0];
-
-                    escStore.count = 1;
-                    escStore.expectedCount = 1;
-
-                    await delay(200);
-
-                    const info = await Direct.getInstance().init();
-                    const newEscData = {
-                        isLoading: true,
-                        data: info!
-                    } as EscData;
-
-                    escData.value.push(newEscData);
-
-                    newEscData.isLoading = false;
+                    connectToEsc();
                 } else {
                     const result = await Msp.getInstance().sendWithPromise(MSP_COMMANDS.MSP_API_VERSION).catch(async (err) => {
                         logError(`${err.message}, trying to exit fourway and try again.`);
@@ -655,21 +648,30 @@ const connectToDevice = async () => {
 };
 
 const connectToEsc = async () => {
-    const router = useRouter();
-    if (!router.currentRoute.value.fullPath.startsWith('/configurator')) {
-        router.push({
-            path: '/configurator'
-        });
-    }
     if (isDirectConnectDevice.value) {
-        if (serialStore.isDirectConnect) {
-            serialStore.isDirectConnect = true;
+        escStore.isLoading = true;
 
-            escStore.expectedCount = 1;
-            escStore.count = 1;
+        serialStore.isDirectConnect = true;
 
-            escStore.escData = [];
-        }
+        savingOrApplyingSelectedEscs.value = [1];
+
+        escStore.count = 1;
+        escStore.expectedCount = 1;
+
+        escData.value = [];
+
+        await delay(200);
+
+        const info = await Direct.getInstance().init();
+        const newEscData = {
+            isLoading: true,
+            data: info!
+        } as EscData;
+
+        escData.value = [newEscData];
+
+        newEscData.isLoading = false;
+        escStore.isLoading = false;
     } else {
         if (!serialStore.isFourWay) {
             const result = await Msp.getInstance().sendWithPromise(MSP_COMMANDS.MSP_SET_PASSTHROUGH);
@@ -709,6 +711,18 @@ const connectToEsc = async () => {
 
         escStore.isLoading = false;
     }
+
+    if (escStore.escData.filter(e => !e.data.settingsBuffer.some(s => s !== 255) || e.data.settingsBuffer.reduce((acc, cur) => acc + cur, 0) === 0).length > 0) {
+        toast.add({
+            title: 'Error',
+            color: 'red',
+            description: 'Found empty settings, flashing default settings now!'
+        });
+
+        savingOrApplyingSelectedEscs.value = escStore.escData.map((_, i) => i + 1);
+
+        applyDefaultConfig();
+    }
 };
 
 const writeConfig = async () => {
@@ -726,16 +740,9 @@ const writeConfig = async () => {
         escStore.settingsDirty = false;
     } else if (serialStore.isDirectConnect && escStore.firstValidEscData) {
         const mcu = new Mcu(escStore.firstValidEscData.data.meta.signature);
-        const setAddress = await Direct.getInstance().writeCommand(DIRECT_COMMANDS.cmd_SetAddress, mcu.getEepromOffset());
-        if (setAddress?.at(0) === DIRECT_RESPONSES.GOOD_ACK) {
-            await Direct.getInstance().writeCommand(DIRECT_COMMANDS.cmd_SetBufferSize, 0, new Uint8Array([Mcu.LAYOUT_SIZE]));
-            const sendBuffer = await Direct.getInstance().writeCommand(DIRECT_COMMANDS.cmd_SendBuffer, 0, objectToSettingsArray(escStore.firstValidEscData.data.settings));
-            if (sendBuffer?.at(0) === DIRECT_RESPONSES.GOOD_ACK) {
-                await Direct.getInstance().writeCommand(DIRECT_COMMANDS.cmd_WriteFlash, 0);
-                escStore.firstValidEscData.data.settingsDirty = false;
-                escStore.firstValidEscData.data.settingsBuffer = objectToSettingsArray(escStore.firstValidEscData.data.settings);
-            }
-        }
+        await Direct.getInstance().writeChunked(mcu.getEepromOffset(), objectToSettingsArray(escStore.firstValidEscData.data.settings));
+        escStore.firstValidEscData.data.settingsDirty = false;
+        escStore.firstValidEscData.data.settingsBuffer = objectToSettingsArray(escStore.firstValidEscData.data.settings);
     }
 };
 
@@ -903,13 +910,14 @@ const startFlash = async (hexString: string) => {
             for (const start of parsed.data) {
                 i = 0;
                 logStore.log(`Flashing: 0x${start.address.toString(16)}, ${start.bytes} bytes`);
+                const CHUNK_SIZE = 64;
                 while (true) {
-                    logStore.log(`... 0x${((start.address - mcu.getFlashOffset()) + (i * 128)).toString(16)} - 0x${((start.address - mcu.getFlashOffset()) + ((i + 1) * 128) - 1).toString(16)}`);
-                    const chunk = new Uint8Array(start.data.slice(i * 128, ((i + 1) * 128 > start.data.length ? start.data.length - 1 : (i + 1) * 128)));
-                    await Direct.getInstance().writeBufferToAddress((start.address - mcu.getFlashOffset()) + (i * 128), chunk);
-                    escStore.bytesWritten += 128;
+                    logStore.log(`... 0x${((start.address - mcu.getFlashOffset()) + (i * CHUNK_SIZE)).toString(16)} - 0x${((start.address - mcu.getFlashOffset()) + ((i + 1) * CHUNK_SIZE) - 1).toString(16)}`);
+                    const chunk = new Uint8Array(start.data.slice(i * CHUNK_SIZE, ((i + 1) * CHUNK_SIZE > start.data.length ? start.data.length - 1 : (i + 1) * CHUNK_SIZE)));
+                    await Direct.getInstance().writeBufferToAddress((start.address - mcu.getFlashOffset()) + (i * CHUNK_SIZE), chunk);
+                    escStore.bytesWritten += CHUNK_SIZE;
                     i += 1;
-                    if ((i + 1) * 128 > start.data.length) {
+                    if ((i + 1) * CHUNK_SIZE > start.data.length) {
                         break;
                     }
                 }
@@ -976,6 +984,10 @@ const applyDefaultConfig = async () => {
         }
 
         await writeConfig();
+
+        if (applyDefaultConfigModalOpen.value) {
+            applyDefaultConfigModalOpen.value = false;
+        }
     }
 
     if (applyConfigFile.value) {
